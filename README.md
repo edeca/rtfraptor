@@ -114,8 +114,13 @@ Although I love Python 3, the debugging library used (winappdbg) currently only 
 
 # Known issues
 
+## Safe mode in Word
+
 The target application (typically Word) is forcibly killed after the timeout expires.  This can cause a Safe Mode 
-prompt next time the application is started, for example if there is a popup waiting for user input. 
+prompt next time the application is started, for example if there is a popup waiting for user input.  
+
+If using the tool manually, raise the timeout and close Word manually.  If operating as part of an automated toolchain, 
+consider resetting the virtual machine between runs or deleting the relevant registry keys.
 
 # See also
 
