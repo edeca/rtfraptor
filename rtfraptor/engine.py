@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-
+"""
+The main RTF debugging engine, uses winappdbg to run Word (or
+another Office executable) and obtain information about OLEv1
+objects as they are loaded.
+"""
 import hashlib
 import logging
 import os
@@ -11,8 +15,10 @@ from winappdbg.win32 import PVOID
 from .utils import bytes_to_clsid
 
 
-class CustomEventHandler(EventHandler):
-
+class CustomEventHandler(EventHandler):  # pylint: disable=too-few-public-methods
+    """
+    Event handler used by winappdbg to instrument the target executable.
+    """
     save_path = None  # type: str
 
     # The list of modules and functions we want to hook.
@@ -64,7 +70,8 @@ class CustomEventHandler(EventHandler):
             info['class_id'] = clsid
 
             if clsid in KNOWN_CLSIDS:
-                self._log.warning("Suspicious OLE object loaded, class id %s (%s)", clsid, KNOWN_CLSIDS[clsid])
+                self._log.warning("Suspicious OLE object loaded, class id %s (%s)",
+                                  clsid, KNOWN_CLSIDS[clsid])
                 self._log.warning("Object size is %d, SHA256 is %s", info['size'], info['sha256'])
                 info['description'] = KNOWN_CLSIDS[clsid]
             else:
@@ -73,7 +80,7 @@ class CustomEventHandler(EventHandler):
 
             self._last_pstg = None
 
-    def _hook_data_conversion(self, event, ra, lpolestream, pstg, ptd):
+    def _hook_data_conversion(self, event, _ra, lpolestream, pstg, _ptd):
         """
         Event hook for OleConvertOLESTREAMToIStorage.  This allows retrieval
         of the raw OLEv1 object from memory.  Information on objects is
@@ -102,7 +109,8 @@ class CustomEventHandler(EventHandler):
 
         self.objects[pstg] = info
 
-        self._log.debug("Dumping data from 0x%08x, destination 0x%08x, length %d, hash %s", data_addr, pstg, info['size'], info['sha256'])
+        self._log.debug("Dumping data from 0x%08x, destination 0x%08x, length %d, hash %s",
+                        data_addr, pstg, info['size'], info['sha256'])
 
     def _apply_hooks(self, event, hooks):
         """
@@ -139,7 +147,10 @@ class CustomEventHandler(EventHandler):
                 # TODO: Check if the above was successful and die if not
 
 
-class OfficeDebugger:
+class OfficeDebugger(object):  # pylint: disable=too-few-public-methods
+    """
+    The main debugging engine, which can be called from other modules.
+    """
 
     executable = None  # type: str
     timeout = 10  # type: int
@@ -155,6 +166,10 @@ class OfficeDebugger:
             self._log = logging.getLogger(__name__)
 
     def run(self, target_file, save_path=None):
+        """
+        Run the executable with the provided file, optionally saving all OLEv1
+        parts that are encountered.
+        """
 
         # TODO: Ensure target_file is readable
 
@@ -179,9 +194,9 @@ class OfficeDebugger:
                         # Get the next debug event.
                         debug.wait(1000)
 
-                    except WindowsError, e:
-                        if e.winerror in (win32.ERROR_SEM_TIMEOUT,
-                                          win32.WAIT_TIMEOUT):
+                    except WindowsError, exc:
+                        if exc.winerror in (win32.ERROR_SEM_TIMEOUT,
+                                            win32.WAIT_TIMEOUT):
                             continue
                         raise
 

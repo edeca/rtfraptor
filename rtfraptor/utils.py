@@ -1,3 +1,6 @@
+"""
+Various helper functions to avoid repeated code across modules.
+"""
 import hashlib
 from binascii import hexlify
 

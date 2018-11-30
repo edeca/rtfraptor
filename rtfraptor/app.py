@@ -1,3 +1,6 @@
+"""
+Example implementation of a console application using rtfraptor.engine.
+"""
 import argparse
 import json
 import logging
@@ -7,13 +10,13 @@ from .utils import sha256_file
 
 def save_json(input_fn, output_fn, objects):
     """
-    Save a JSON representation of the output to the given file. 
+    Save a JSON representation of the output to the given file.
     """
-    hash = sha256_file(input_fn)
-    info = {"input_file": input_fn, "sha256": hash, "objects": {}}
+    sha256 = sha256_file(input_fn)
+    info = {"input_file": input_fn, "sha256": sha256, "objects": {}}
 
     index = 0
-    for _,obj in objects.items():
+    for _, obj in objects.items():
         info['objects'][index] = obj
         index += 1
 
@@ -22,6 +25,9 @@ def save_json(input_fn, output_fn, objects):
 
 
 def main():
+    """
+    Main entry point, parses arguments and calls the RTF debugging engine.
+    """
 
     parser = argparse.ArgumentParser(
         description=("Rip OLEv1 objects from obfuscated RTF files, by "
@@ -65,12 +71,12 @@ def main():
     )
 
     args = parser.parse_args()
-    format = '%(levelname)s %(message)s'
+    fmt = '%(levelname)s %(message)s'
 
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG, format=format)
+        logging.basicConfig(level=logging.DEBUG, format=fmt)
     else:
-        logging.basicConfig(level=logging.INFO, format=format)
+        logging.basicConfig(level=logging.INFO, format=fmt)
 
     engine = OfficeDebugger(args.executable)
     engine.timeout = args.timeout
