@@ -94,7 +94,7 @@ WARNING Object size is 7727, SHA256 is a612b7b97f021797c5911cfe02bd9a145f96abb88
 The tool will produce output in JSON format if the `--json` option is passed.  This can be used for further processing,
 and is in the following format:
 
-```json
+```
 {
   "sha256": "8326bcb300389a2d654e6e921e259e553f33f8949984c2da55ccb6e9ed3f6480",
   "input_file": "7296D52E0713F4BF15CD4E80EF0DA37E.rtf",
