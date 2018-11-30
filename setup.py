@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="rtfraptor",
-    version="0.0.1",
+    version="0.0.2",
     author="David Cannings",
     author_email="david@edeca.net",
     description="Dump interesting OLE parts from RTF documents by instrumenting Word",
