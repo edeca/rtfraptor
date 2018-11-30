@@ -2,6 +2,8 @@
 
 import hashlib
 import logging
+import os
+from collections import OrderedDict
 from time import time
 from oletools.common.clsid import KNOWN_CLSIDS
 from winappdbg import Debug, EventHandler, System, win32
@@ -10,6 +12,8 @@ from .utils import bytes_to_clsid
 
 
 class CustomEventHandler(EventHandler):
+
+    save_path = None  # type: str
 
     # The list of modules and functions we want to hook.
     _hooks = {
@@ -29,7 +33,7 @@ class CustomEventHandler(EventHandler):
     def __init__(self, logger):
         super(CustomEventHandler, self).__init__()
         self._log = logger
-        self.objects = {}
+        self.objects = OrderedDict()
 
     def _hook_load(self, _event, _ra, pstg, _riid, _pclientsite, _ppvobjx):
         """
@@ -43,13 +47,18 @@ class CustomEventHandler(EventHandler):
         self._last_pstg = pstg
 
     def _hook_guid_conversion(self, event, _ra, clsid_old, _pclsid_new):
+        """
+        Event hook for OleGetAutoConvert.  This allows us to obtain the actual
+        class id which is being loaded.
+
+        This hook will also be called from other places.  We reduce the risk
+        of false positives by only logging details if OleLoad has just been
+        called, by checking for self._last_pstg.
+        """
         process = event.get_process()
         clsid_bytes = process.read(clsid_old, 16)
         clsid = bytes_to_clsid(clsid_bytes)
 
-        # This hook will also be called from other places.  We reduce the
-        # risk of false positives by only logging details if OleLoad has
-        # just been called.
         if self._last_pstg:
             info = self.objects[self._last_pstg]
             info['class_id'] = clsid
@@ -65,6 +74,11 @@ class CustomEventHandler(EventHandler):
             self._last_pstg = None
 
     def _hook_data_conversion(self, event, ra, lpolestream, pstg, ptd):
+        """
+        Event hook for OleConvertOLESTREAMToIStorage.  This allows retrieval
+        of the raw OLEv1 object from memory.  Information on objects is
+        stored using pstg (the location in memory) as a unique key.
+        """
         info = {}
 
         process = event.get_process()
@@ -81,9 +95,10 @@ class CustomEventHandler(EventHandler):
         hasher.update(data)
         info['sha256'] = hasher.hexdigest()
 
-        # TODO: Allow the target directory to be set for saved data
-        with open(info['sha256'], 'wb') as fh:
-            fh.write(data)
+        if self.save_path:
+            filename = os.path.join(self.save_path, info['sha256'])
+            with open(filename, 'wb') as fh:
+                fh.write(data)
 
         self.objects[pstg] = info
 
@@ -124,42 +139,58 @@ class CustomEventHandler(EventHandler):
                 # TODO: Check if the above was successful and die if not
 
 
-def office_debugger(executable, target_file, timeout=10, save_objs=True):
+class OfficeDebugger:
 
-    # TODO: Ensure executable is executable and target_file is readable
+    executable = None  # type: str
+    timeout = 10  # type: int
 
-    opts = [executable, target_file]
+    def __init__(self, executable, logger=None):
 
-    logger = logging.getLogger(__name__)
-    handler = CustomEventHandler(logger)
+        # TODO: Ensure executable is executable
+        # TODO: Check 32-bit vs. 64-bit?
+        self.executable = executable
+        if logger:
+            self._log = logger
+        else:
+            self._log = logging.getLogger(__name__)
 
-    with Debug(handler, bKillOnExit=True) as debug:
+    def run(self, target_file, save_path=None):
 
-        # Ensure the target application dies if the debugger is killed
-        System.set_kill_on_exit_mode(True)
-        max_time = time() + timeout
+        # TODO: Ensure target_file is readable
 
-        try:
-            debug.execv(opts)
-        except WindowsError:
-            logger.error("Could not run Office application, check it is 32-bit")
+        opts = [self.executable, target_file]
+        handler = CustomEventHandler(self._log)
+        handler.save_path = save_path
 
-        try:
-            while debug.get_debugee_count() > 0 and time() < max_time:
-                try:
-                    # Get the next debug event.
-                    debug.wait(1000)
+        with Debug(handler, bKillOnExit=True) as debug:
 
-                except WindowsError, e:
-                    if e.winerror in (win32.ERROR_SEM_TIMEOUT,
-                                      win32.WAIT_TIMEOUT):
-                        continue
-                    raise
+            # Ensure the target application dies if the debugger is killed
+            System.set_kill_on_exit_mode(True)
+            max_time = time() + self.timeout
 
-                # Dispatch the event and continue execution.
-                try:
-                    debug.dispatch()
-                finally:
-                    debug.cont()
-        finally:
-            debug.stop()
+            try:
+                debug.execv(opts)
+            except WindowsError:
+                self._log.error("Could not run Office application, check it is 32-bit")
+
+            try:
+                while debug.get_debugee_count() > 0 and time() < max_time:
+                    try:
+                        # Get the next debug event.
+                        debug.wait(1000)
+
+                    except WindowsError, e:
+                        if e.winerror in (win32.ERROR_SEM_TIMEOUT,
+                                          win32.WAIT_TIMEOUT):
+                            continue
+                        raise
+
+                    # Dispatch the event and continue execution.
+                    try:
+                        debug.dispatch()
+                    finally:
+                        debug.cont()
+            finally:
+                debug.stop()
+
+        return handler.objects

@@ -1,3 +1,4 @@
+import hashlib
 from binascii import hexlify
 
 
@@ -43,3 +44,14 @@ def bytes_to_clsid(data):
     clsid += data[20:]
 
     return clsid.upper()
+
+
+def sha256_file(filename):
+    """
+    Returns the SHA256 hash of a file, reading it in 4KiB chunks.
+    """
+    hasher = hashlib.sha256()
+    with open(filename, "rb") as fh:
+        for chunk in iter(lambda: fh.read(4096), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()

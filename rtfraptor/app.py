@@ -1,6 +1,25 @@
 import argparse
+import json
 import logging
-from .engine import office_debugger
+from .engine import OfficeDebugger
+from .utils import sha256_file
+
+
+def save_json(input_fn, output_fn, objects):
+    """
+    Save a JSON representation of the output to the given file. 
+    """
+    hash = sha256_file(input_fn)
+    info = {"input_file": input_fn, "sha256": hash, "objects": {}}
+
+    index = 0
+    for _,obj in objects.items():
+        info['objects'][index] = obj
+        index += 1
+
+    with open(output_fn, 'w') as fh:
+        json.dump(info, fh)
+
 
 def main():
 
@@ -27,19 +46,23 @@ def main():
         required=True,
     )
     parser.add_argument(
+        "--json",
+        help="JSON output file (default: disabled)",
+        type=str,
+        required=False,
+    )
+    parser.add_argument(
         "--timeout",
         help="how long to wait before killing target executable (default: 10 seconds)",
         type=int,
         default=10,
     )
     parser.add_argument(
-        "--disable-save",
-        help="don't save OLEv1 objects to disk (default: objects are saved)",
-        action='store_true',
-        default=False,
+        "--save-path",
+        help="directory to save OLEv1 objects (default: objects are not saved)",
+        type=str,
+        default=None,
     )
-
-    # TODO: JSON output
 
     args = parser.parse_args()
 
@@ -48,7 +71,12 @@ def main():
     else:
         logging.basicConfig(level=logging.INFO)
 
-    office_debugger(args.executable, args.file, timeout=args.timeout, save_objs=not args.disable_save)
+    engine = OfficeDebugger(args.executable)
+    engine.timeout = args.timeout
+    objects = engine.run(args.file, save_path=args.save_path)
+
+    if args.json:
+        save_json(args.file, args.json, objects)
 
 
 if __name__ == "__main__":
