@@ -65,11 +65,12 @@ def main():
     )
 
     args = parser.parse_args()
+    format = '%(levelname)s %(message)s'
 
     if args.debug:
-        logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=logging.DEBUG, format=format)
     else:
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.INFO, format=format)
 
     engine = OfficeDebugger(args.executable)
     engine.timeout = args.timeout
