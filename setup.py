@@ -18,7 +18,7 @@ setuptools.setup(
         'console_scripts': ['rtfraptor=rtfraptor.app:main'],
     },
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2",
         "OSI Approved :: GNU Affero General Public License v3",
         "Environment :: Win32 (MS Windows)",
         "Operating System :: Microsoft :: Windows",
