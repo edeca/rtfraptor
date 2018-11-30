@@ -17,6 +17,8 @@ The tool was written by [David Cannings](https://twitter.com/edeca) and is relea
 
 # Example
 
+![Example screen grab](doc/example.gif)
+
 ## Installation
 
 Install rtfraptor like so:
