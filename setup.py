@@ -19,7 +19,7 @@ setuptools.setup(
     },
     classifiers=[
         "Programming Language :: Python :: 2",
-        "OSI Approved :: GNU Affero General Public License v3",
+        "License :: OSI Approved :: GNU Affero General Public License v3",
         "Environment :: Win32 (MS Windows)",
         "Operating System :: Microsoft :: Windows",
         "Development Status :: 4 - Beta",

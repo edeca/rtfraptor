@@ -17,7 +17,7 @@ The tool was written by [David Cannings](https://twitter.com/edeca) and is relea
 
 # Example
 
-![Example screen grab](doc/example.gif)
+![Example screen grab](https://github.com/edeca/rtfraptor/blob/master/doc/example.gif?raw=true)
 
 ## Installation
 
