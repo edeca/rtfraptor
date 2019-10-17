@@ -1,11 +1,11 @@
 import setuptools
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="rtfraptor",
-    version="1.0.0",
+    version="1.0.1",
     author="David Cannings",
     author_email="david@edeca.net",
     description="Dump interesting OLE parts from RTF documents by instrumenting Word",
